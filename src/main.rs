@@ -15,8 +15,8 @@ async fn main() {
     let config = ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(
-            vec![CertificateDer::from_pem_file("localhost.crt").unwrap()],
-            PrivateKeyDer::from_pem_file("localhost.key").unwrap(),
+            vec![CertificateDer::from_pem_file("certs/localhost.crt").unwrap()],
+            PrivateKeyDer::from_pem_file("certs/localhost.key").unwrap(),
         )
         .unwrap();
     let config = RustlsConfig::from_config(Arc::new(config));
