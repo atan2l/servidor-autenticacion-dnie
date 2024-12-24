@@ -7,7 +7,6 @@ use rustls::server::WebPkiClientVerifier;
 use rustls::{RootCertStore, ServerConfig};
 use rustls_pki_types::pem::PemObject;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
-use std::fs::read;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
@@ -37,10 +36,7 @@ async fn main() {
 fn create_root_cert_store() -> RootCertStore {
     let mut root_cert_store = RootCertStore::empty();
     root_cert_store
-        .add(CertificateDer::from(read("certs/AC005.crt").unwrap()))
-        .unwrap();
-    root_cert_store
-        .add(CertificateDer::from(read("certs/ACRaiz2.crt").unwrap()))
+        .add(CertificateDer::from_pem_file("certs/AC005.pem").unwrap())
         .unwrap();
 
     root_cert_store
