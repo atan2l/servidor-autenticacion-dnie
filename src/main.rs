@@ -7,13 +7,16 @@ use rustls::server::WebPkiClientVerifier;
 use rustls::{RootCertStore, ServerConfig};
 use rustls_pki_types::pem::PemObject;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
+use std::fs::read;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 #[tokio::main]
 async fn main() {
-    let root_cert_store = create_root_cert_store();
-    let client_cert_verifier = WebPkiClientVerifier::builder(root_cert_store.into())
+    env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
+
+    let root_cert_store = create_root_cert_store().into();
+    let client_cert_verifier = WebPkiClientVerifier::builder(root_cert_store)
         .build()
         .unwrap();
     let config = ServerConfig::builder()
@@ -36,7 +39,10 @@ async fn main() {
 fn create_root_cert_store() -> RootCertStore {
     let mut root_cert_store = RootCertStore::empty();
     root_cert_store
-        .add(CertificateDer::from_pem_file("certs/AC005.pem").unwrap())
+        .add(CertificateDer::from(read("certs/ACRaiz2.crt").unwrap()))
+        .unwrap();
+    root_cert_store
+        .add(CertificateDer::from(read("certs/AC005.crt").unwrap()))
         .unwrap();
 
     root_cert_store
