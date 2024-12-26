@@ -4,7 +4,7 @@ use axum::routing::get;
 use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
 use rustls::server::WebPkiClientVerifier;
-use rustls::{RootCertStore, ServerConfig};
+use rustls::{KeyLogFile, RootCertStore, ServerConfig};
 use rustls_pki_types::pem::PemObject;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use std::fs::read;
@@ -19,14 +19,15 @@ async fn main() {
     let client_cert_verifier = WebPkiClientVerifier::builder(root_cert_store)
         .build()
         .unwrap();
-    let config = ServerConfig::builder()
+    let mut config = ServerConfig::builder()
         .with_client_cert_verifier(client_cert_verifier)
         .with_single_cert(
             vec![CertificateDer::from_pem_file("certs/localhost.crt").unwrap()],
             PrivateKeyDer::from_pem_file("certs/localhost.key").unwrap(),
         )
         .unwrap();
-    let config = RustlsConfig::from_config(Arc::new(config));
+    config.key_log = Arc::new(KeyLogFile::new());
+    let config = RustlsConfig::from_config(config.into());
 
     let app = Router::new().route("/", get(|| async { "Hello, World!" }));
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
