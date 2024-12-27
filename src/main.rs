@@ -17,9 +17,7 @@ use std::fs::read;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use webpki::aws_lc_rs::{
-    RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512
-
-    ,
+    RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512,
 };
 
 static SUPPORTED_SIG_ALGOS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
