@@ -52,16 +52,17 @@ async fn main() {
         TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
     ];
     crypto_provider.signature_verification_algorithms = SUPPORTED_SIG_ALGOS;
+    let crypto_provider = Arc::new(crypto_provider);
 
     let root_cert_store = create_root_cert_store().into();
     let client_cert_verifier = WebPkiClientVerifier::builder_with_provider(
         root_cert_store,
-        crypto_provider.clone().into(),
+        crypto_provider.clone(),
     )
     .build()
     .unwrap();
 
-    let mut config = ServerConfig::builder_with_provider(crypto_provider.into())
+    let mut config = ServerConfig::builder_with_provider(crypto_provider)
         .with_protocol_versions(&[&TLS12])
         .unwrap()
         .with_client_cert_verifier(client_cert_verifier)
