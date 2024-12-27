@@ -40,10 +40,16 @@ async fn main() {
 fn create_root_cert_store() -> RootCertStore {
     let mut root_cert_store = RootCertStore::empty();
     root_cert_store
-        .add(CertificateDer::from(read("certs/ACRaiz2.crt").unwrap()))
+        .add(CertificateDer::from(read("certs/AC004.crt").unwrap()))
         .unwrap();
     root_cert_store
         .add(CertificateDer::from(read("certs/AC005.crt").unwrap()))
+        .unwrap();
+    root_cert_store
+        .add(CertificateDer::from(read("certs/AC006.crt").unwrap()))
+        .unwrap();
+    root_cert_store
+        .add(CertificateDer::from(read("certs/ACRaiz2.crt").unwrap()))
         .unwrap();
 
     root_cert_store
