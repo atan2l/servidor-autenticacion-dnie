@@ -3,7 +3,9 @@ mod auth;
 use axum::routing::get;
 use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
+use rustls::crypto::aws_lc_rs::default_provider;
 use rustls::server::WebPkiClientVerifier;
+use rustls::version::TLS12;
 use rustls::{KeyLogFile, RootCertStore, ServerConfig};
 use rustls_pki_types::pem::PemObject;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
@@ -19,7 +21,14 @@ async fn main() {
     let client_cert_verifier = WebPkiClientVerifier::builder(root_cert_store)
         .build()
         .unwrap();
-    let mut config = ServerConfig::builder()
+    let mut crypto_provider = default_provider();
+    crypto_provider.cipher_suites = vec![
+        rustls::crypto::aws_lc_rs::cipher_suite::TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+        rustls::crypto::aws_lc_rs::cipher_suite::TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+    ];
+    let mut config = ServerConfig::builder_with_provider(crypto_provider.into())
+        .with_protocol_versions(&[&TLS12])
+        .unwrap()
         .with_client_cert_verifier(client_cert_verifier)
         .with_single_cert(
             vec![CertificateDer::from_pem_file("certs/localhost.crt").unwrap()],
