@@ -749,6 +749,7 @@ dependencies = [
  "futures-util",
  "rustls",
  "rustls-pki-types",
+ "rustls-webpki",
  "tokio",
  "tokio-rustls",
  "tower 0.5.2",

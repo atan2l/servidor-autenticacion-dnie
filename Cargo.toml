@@ -8,9 +8,10 @@ axum = "0.7"
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "macros"] }
 tokio-rustls = "0.26"
-rustls = {version = "0.23", features = ["logging"]}
+rustls = { version = "0.23", features = ["logging"] }
 env_logger = "0.11"
 rustls-pki-types = "1.10"
 tower = "0.5"
 futures-util = "0.3"
 x509-parser = "0.16"
+rustls-webpki = { version = "0.102", features = ["aws_lc_rs"], default-features = false }
