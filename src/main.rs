@@ -3,29 +3,66 @@ mod auth;
 use axum::routing::get;
 use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
+use rustls::crypto::aws_lc_rs::cipher_suite::{
+    TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+};
 use rustls::crypto::aws_lc_rs::default_provider;
+use rustls::crypto::WebPkiSupportedAlgorithms;
 use rustls::server::WebPkiClientVerifier;
 use rustls::version::TLS12;
-use rustls::{KeyLogFile, RootCertStore, ServerConfig};
+use rustls::{KeyLogFile, RootCertStore, ServerConfig, SignatureScheme};
 use rustls_pki_types::pem::PemObject;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
 use std::fs::read;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use webpki::aws_lc_rs::{
+    RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512
+
+    ,
+};
+
+static SUPPORTED_SIG_ALGOS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
+    all: &[
+        RSA_PKCS1_2048_8192_SHA512,
+        RSA_PKCS1_2048_8192_SHA384,
+        RSA_PKCS1_2048_8192_SHA256,
+    ],
+    mapping: &[
+        (
+            SignatureScheme::RSA_PKCS1_SHA512,
+            &[RSA_PKCS1_2048_8192_SHA512],
+        ),
+        (
+            SignatureScheme::RSA_PKCS1_SHA384,
+            &[RSA_PKCS1_2048_8192_SHA384],
+        ),
+        (
+            SignatureScheme::RSA_PKCS1_SHA256,
+            &[RSA_PKCS1_2048_8192_SHA256],
+        ),
+    ],
+};
 
 #[tokio::main]
 async fn main() {
     env_logger::Builder::from_env(env_logger::Env::default().default_filter_or("debug")).init();
 
-    let root_cert_store = create_root_cert_store().into();
-    let client_cert_verifier = WebPkiClientVerifier::builder(root_cert_store)
-        .build()
-        .unwrap();
     let mut crypto_provider = default_provider();
     crypto_provider.cipher_suites = vec![
-        rustls::crypto::aws_lc_rs::cipher_suite::TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-        rustls::crypto::aws_lc_rs::cipher_suite::TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+        TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+        TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
     ];
+    crypto_provider.signature_verification_algorithms = SUPPORTED_SIG_ALGOS;
+
+    let root_cert_store = create_root_cert_store().into();
+    let client_cert_verifier = WebPkiClientVerifier::builder_with_provider(
+        root_cert_store,
+        crypto_provider.clone().into(),
+    )
+    .build()
+    .unwrap();
+
     let mut config = ServerConfig::builder_with_provider(crypto_provider.into())
         .with_protocol_versions(&[&TLS12])
         .unwrap()
@@ -38,7 +75,7 @@ async fn main() {
     config.key_log = Arc::new(KeyLogFile::new());
     let config = RustlsConfig::from_config(config.into());
 
-    let app = Router::new().route("/", get(|| async { "Hello, World!" }));
+    let app = Router::new().route("/", get(|| async { "No se me escapa el DNIe" }));
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     axum_server::bind_rustls(addr, config)
         .serve(app.into_make_service())
