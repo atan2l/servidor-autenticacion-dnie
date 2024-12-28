@@ -32,7 +32,7 @@ async fn main() {
 
     let config = RustlsConfig::from_config(server_config);
     let app = Router::new().route("/", get(|| async { "Hello, world!" }));
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 443));
     axum_server::bind_rustls(addr, config)
         .serve(app.into_make_service())
         .await
