@@ -1,3 +1,5 @@
+mod auth;
+
 use axum::routing::get;
 use axum::Router;
 use axum_server::tls_rustls::RustlsConfig;
@@ -84,7 +86,7 @@ fn create_server_config(
             PrivateKeyDer::from_pem_file(&server_key_path)
                 .expect("Failed to parse server key file.")
         } else {
-            unreachable!();
+            panic!("The key file must have the extension .key");
         }
     } else {
         panic!("Server key file has no valid extension.");
@@ -129,7 +131,7 @@ fn add_certificate(root_cert_store: &mut RootCertStore, ext: &str, path: PathBuf
                 .add(load_certificate(ext, &path))
                 .expect("Failed to add DER certificate to root store.");
         }
-        _ => unreachable!(),
+        _ => panic!("Invalid certificate extension: {}", ext),
     }
 }
 
@@ -137,7 +139,7 @@ fn load_certificate<'a>(ext: &str, path: &PathBuf) -> CertificateDer<'a> {
     match ext {
         "pem" => CertificateDer::from_pem_file(path).expect("Failed to parse PEM file."),
         "der" => CertificateDer::from(read(path).expect("Failed to read DER file.")),
-        _ => unreachable!(),
+        _ => panic!("Invalid certificate extension: {}", ext),
     }
 }
 

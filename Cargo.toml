@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 axum = "0.7"
-axum-server = { version = "0.7", features = ["tls-rustls"] }
+axum-server = { version = "0.7", features = ["tls-rustls"], default-features = false }
 tokio = { version = "1.0", features = ["rt", "rt-multi-thread", "macros"] }
-rustls = "0.23"
-rustls-pki-types = "1.10"
+rustls = { version = "0.23", features = ["tls12"], default-features = false }
+rustls-pki-types = { version = "1.10", default-features = false }
 rustls-webpki = { version = "0.102", features = ["aws_lc_rs"], default-features = false }
 dotenvy = "0.15"
