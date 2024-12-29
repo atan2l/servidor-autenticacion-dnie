@@ -1,8 +1,10 @@
-mod auth;
+mod middleware;
+mod routes;
+mod server_state;
 
-use crate::auth::{client_cert_middleware, AuthAcceptor, ClientCertData};
-use axum::routing::get;
-use axum::{middleware, Extension, Router};
+use crate::middleware::client_cert_auth::{client_cert_middleware, AuthAcceptor};
+use crate::server_state::ServerState;
+use axum::Router;
 use axum_server::tls_rustls::{RustlsAcceptor, RustlsConfig};
 use rustls::crypto::aws_lc_rs::cipher_suite::{
     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
@@ -19,6 +21,7 @@ use std::fs::{read, read_dir};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 use webpki::aws_lc_rs::{
     RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512,
 };
@@ -32,11 +35,14 @@ async fn main() {
     let client_cert_verifier =
         create_client_cert_verifier(root_cert_store, crypto_provider.clone());
     let server_config = create_server_config(crypto_provider, client_cert_verifier);
+    let server_state = Arc::new(Mutex::new(ServerState::default()));
 
     let config = RustlsConfig::from_config(server_config);
     let app = Router::new()
-        .route("/", get(get_auth))
-        .route_layer(middleware::from_fn(client_cert_middleware));
+        .merge(routes::create_routes())
+        .with_state(server_state)
+        .route_layer(axum::middleware::from_fn(client_cert_middleware));
+
     let addr = SocketAddr::from(([127, 0, 0, 1], 443));
     axum_server::bind(addr)
         .acceptor(AuthAcceptor::new(RustlsAcceptor::new(config)))
@@ -170,10 +176,3 @@ static SUPPORTED_SIG_ALGORITHMS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgo
 };
 
 const SUPPORTED_CERT_EXTENSIONS: [&str; 2] = ["pem", "der"];
-
-async fn get_auth(Extension(client_cert_data): Extension<ClientCertData>) -> String {
-    format!(
-        "CN={}, C={}, serial number={}",
-        client_cert_data.common_name, client_cert_data.country, client_cert_data.serial_number
-    )
-}

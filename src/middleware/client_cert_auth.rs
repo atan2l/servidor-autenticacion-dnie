@@ -1,4 +1,4 @@
-use axum::extract::Request;
+﻿use axum::extract::Request;
 use axum::middleware::{AddExtension, Next};
 use axum::response::Response;
 use axum::Extension;
@@ -72,8 +72,8 @@ pub async fn client_cert_middleware(
                 .first()
                 .ok_or("Missing client certificate")?,
         )
-        .map_err(|_| "Invalid client certificate")?
-        .1;
+            .map_err(|_| "Invalid client certificate")?
+            .1;
 
         let common_name = x509
             .subject
