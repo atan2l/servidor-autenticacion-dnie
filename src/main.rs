@@ -1,8 +1,9 @@
 mod auth;
 
+use crate::auth::{client_cert_middleware, AuthAcceptor, ClientCertData};
 use axum::routing::get;
-use axum::Router;
-use axum_server::tls_rustls::RustlsConfig;
+use axum::{middleware, Extension, Router};
+use axum_server::tls_rustls::{RustlsAcceptor, RustlsConfig};
 use rustls::crypto::aws_lc_rs::cipher_suite::{
     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 };
@@ -33,9 +34,12 @@ async fn main() {
     let server_config = create_server_config(crypto_provider, client_cert_verifier);
 
     let config = RustlsConfig::from_config(server_config);
-    let app = Router::new().route("/", get(|| async { "Hello, world!" }));
+    let app = Router::new()
+        .route("/", get(get_auth))
+        .route_layer(middleware::from_fn(client_cert_middleware));
     let addr = SocketAddr::from(([127, 0, 0, 1], 443));
-    axum_server::bind_rustls(addr, config)
+    axum_server::bind(addr)
+        .acceptor(AuthAcceptor::new(RustlsAcceptor::new(config)))
         .serve(app.into_make_service())
         .await
         .unwrap()
@@ -166,3 +170,10 @@ static SUPPORTED_SIG_ALGORITHMS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgo
 };
 
 const SUPPORTED_CERT_EXTENSIONS: [&str; 2] = ["pem", "der"];
+
+async fn get_auth(Extension(client_cert_data): Extension<ClientCertData>) -> String {
+    format!(
+        "CN={}, C={}, serial number={}",
+        client_cert_data.common_name, client_cert_data.country, client_cert_data.serial_number
+    )
+}
