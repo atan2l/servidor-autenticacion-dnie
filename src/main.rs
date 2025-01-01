@@ -40,7 +40,6 @@ async fn main() {
     let config = RustlsConfig::from_config(server_config);
     let app = Router::new()
         .merge(routes::create_routes())
-        .with_state(server_state)
         .route_layer(axum::middleware::from_fn(client_cert_middleware));
 
     let addr = SocketAddr::from(([127, 0, 0, 1], 443));

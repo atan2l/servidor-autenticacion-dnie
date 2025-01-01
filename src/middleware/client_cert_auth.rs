@@ -11,12 +11,13 @@ use tokio::io::{AsyncRead, AsyncWrite};
 use tokio_rustls::server::TlsStream;
 use tower::ServiceBuilder;
 use x509_parser::certificate::X509Certificate;
-use x509_parser::oid_registry::OID_X509_SERIALNUMBER;
+use x509_parser::oid_registry::{OID_X509_GIVEN_NAME, OID_X509_SERIALNUMBER, OID_X509_SURNAME};
 use x509_parser::prelude::FromDer;
 
 #[derive(Clone)]
 pub struct ClientCertData {
-    pub common_name: String,
+    pub given_name: String,
+    pub surname: String,
     pub serial_number: String,
     pub country: String,
 }
@@ -72,23 +73,30 @@ pub async fn client_cert_middleware(
                 .first()
                 .ok_or("Missing client certificate")?,
         )
-            .map_err(|_| "Invalid client certificate")?
-            .1;
+        .map_err(|_| "Invalid client certificate")?
+        .1;
 
-        let common_name = x509
+        let given_name = x509
             .subject
-            .iter_common_name()
+            .iter_by_oid(&OID_X509_GIVEN_NAME)
             .next()
-            .ok_or("Missing CN")?
+            .ok_or("Missing given name")?
             .as_str()
-            .map_err(|_| "Invalid CN")?;
+            .map_err(|_| "Invalid given name")?;
+        let surname = x509
+            .subject
+            .iter_by_oid(&OID_X509_SURNAME)
+            .next()
+            .ok_or("Missing surname")?
+            .as_str()
+            .map_err(|_| "Invalid surname")?;
         let country = x509
             .subject
             .iter_country()
             .next()
-            .ok_or("Missing C")?
+            .ok_or("Missing country")?
             .as_str()
-            .map_err(|_| "Invalid C")?;
+            .map_err(|_| "Invalid country")?;
         let serial_number = x509
             .subject()
             .iter_by_oid(&OID_X509_SERIALNUMBER)
@@ -98,7 +106,8 @@ pub async fn client_cert_middleware(
             .map_err(|_| "Invalid serial number")?;
 
         request.extensions_mut().insert(ClientCertData {
-            common_name: common_name.to_string(),
+            given_name: given_name.to_string(),
+            surname: surname.to_string(),
             country: country.to_string(),
             serial_number: serial_number.to_string(),
         });
