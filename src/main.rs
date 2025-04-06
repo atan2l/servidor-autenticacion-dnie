@@ -1,9 +1,7 @@
 mod middleware;
 mod routes;
-mod server_state;
 
 use crate::middleware::client_cert_auth::{client_cert_middleware, AuthAcceptor};
-use crate::server_state::ServerState;
 use axum::Router;
 use axum_server::tls_rustls::{RustlsAcceptor, RustlsConfig};
 use rustls::crypto::aws_lc_rs::cipher_suite::{
@@ -21,7 +19,6 @@ use std::fs::{read, read_dir};
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use webpki::aws_lc_rs::{
     RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512,
 };
@@ -35,7 +32,6 @@ async fn main() {
     let client_cert_verifier =
         create_client_cert_verifier(root_cert_store, crypto_provider.clone());
     let server_config = create_server_config(crypto_provider, client_cert_verifier);
-    let server_state = Arc::new(Mutex::new(ServerState::default()));
 
     let config = RustlsConfig::from_config(server_config);
     let app = Router::new()
