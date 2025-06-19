@@ -2,7 +2,7 @@ use crate::middleware::client_cert_auth::ClientCertData;
 use axum::response::IntoResponse;
 use axum::Extension;
 
-pub async fn get_test(Extension(client_cert_data): Extension<ClientCertData>) -> impl IntoResponse {
+pub(super) async fn get_test(Extension(client_cert_data): Extension<ClientCertData>) -> impl IntoResponse {
     format!(
         "givenName={}, surname={}, C={}, serial number={}",
         client_cert_data.given_name,

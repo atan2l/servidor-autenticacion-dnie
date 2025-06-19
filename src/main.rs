@@ -1,21 +1,25 @@
+mod app_state;
 mod middleware;
 mod routes;
 
-use crate::middleware::client_cert_auth::{client_cert_middleware, AuthAcceptor};
+use crate::app_state::AppState;
+use crate::middleware::client_cert_auth::{AuthAcceptor, client_cert_middleware};
 use axum::Router;
 use axum_server::tls_rustls::{RustlsAcceptor, RustlsConfig};
+use jsonwebtoken_aws_lc::EncodingKey;
 use rustls::crypto::aws_lc_rs::cipher_suite::{
     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 };
 use rustls::crypto::aws_lc_rs::default_provider;
 use rustls::crypto::{CryptoProvider, WebPkiSupportedAlgorithms};
-use rustls::server::danger::ClientCertVerifier;
 use rustls::server::WebPkiClientVerifier;
+use rustls::server::danger::ClientCertVerifier;
 use rustls::version::TLS12;
 use rustls::{RootCertStore, ServerConfig, SignatureScheme};
 use rustls_pki_types::pem::PemObject;
 use rustls_pki_types::{CertificateDer, PrivateKeyDer};
-use std::fs::{read, read_dir};
+use std::fs::{File, read, read_dir};
+use std::io::Read;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -33,10 +37,22 @@ async fn main() {
         create_client_cert_verifier(root_cert_store, crypto_provider.clone());
     let server_config = create_server_config(crypto_provider, client_cert_verifier);
 
+    let jwt_key_file =
+        PathBuf::from(dotenvy::var("JWT_PRIVATE_KEY").expect("Environment variable not set"));
+    let jwt_key_ext = jwt_key_file
+        .extension()
+        .and_then(|e| e.to_str())
+        .expect("Invalid extension");
+
+    let app_state = AppState {
+        jwt_private_key: load_jwt_key(jwt_key_ext, &jwt_key_file),
+    };
+
     let config = RustlsConfig::from_config(server_config);
     let app = Router::new()
         .merge(routes::create_routes())
-        .route_layer(axum::middleware::from_fn(client_cert_middleware));
+        .route_layer(axum::middleware::from_fn(client_cert_middleware))
+        .with_state(app_state);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8443));
     axum_server::bind(addr)
@@ -145,6 +161,19 @@ fn load_certificate<'a>(ext: &str, path: &PathBuf) -> CertificateDer<'a> {
         "pem" => CertificateDer::from_pem_file(path).expect("Failed to parse PEM file."),
         "der" => CertificateDer::from(read(path).expect("Failed to read DER file.")),
         _ => panic!("Invalid certificate extension: {}", ext),
+    }
+}
+
+fn load_jwt_key(ext: &str, path: &PathBuf) -> EncodingKey {
+    let mut jwt_key = vec![];
+    File::open(path)
+        .expect("Failed to open file.")
+        .read_to_end(&mut jwt_key)
+        .expect("Failed to read file.");
+    match ext {
+        "pem" => EncodingKey::from_rsa_pem(&jwt_key).expect("Failed to parse PEM file."),
+        "der" => EncodingKey::from_rsa_der(&jwt_key),
+        _ => panic!("Invalid JWT key extension: {}", ext),
     }
 }
 
