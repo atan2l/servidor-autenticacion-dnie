@@ -85,10 +85,10 @@ fn create_server_config(
     crypto_provider: Arc<CryptoProvider>,
     client_cert_verifier: Arc<dyn ClientCertVerifier>,
 ) -> Arc<ServerConfig> {
-    let server_cert_path = dotenvy::var("DNIE_AUTH_SERVER_CERT")
-        .expect("DNIE_AUTH_SERVER_CERT environment variable not set.");
-    let server_key_path = dotenvy::var("DNIE_AUTH_SERVER_KEY")
-        .expect("DNIE_AUTH_SERVER_KEY environment variable not set.");
+    let server_cert_path = dotenvy::var("SERVER_CERT")
+        .expect("SERVER_CERT environment variable not set.");
+    let server_key_path = dotenvy::var("SERVER_KEY")
+        .expect("SERVER_KEY environment variable not set.");
 
     let server_certificate = if let Some(ext) = PathBuf::from(&server_cert_path)
         .extension()
