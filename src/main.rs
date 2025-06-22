@@ -8,6 +8,7 @@ use axum::Router;
 use axum_server::tls_rustls::{RustlsAcceptor, RustlsConfig};
 use jsonwebtoken_aws_lc::EncodingKey;
 use rustls::crypto::aws_lc_rs::cipher_suite::{
+    TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
     TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 };
 use rustls::crypto::aws_lc_rs::default_provider;
@@ -24,7 +25,8 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use webpki::aws_lc_rs::{
-    RSA_PKCS1_2048_8192_SHA256, RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512,
+    ECDSA_P256_SHA256, ECDSA_P384_SHA384, ECDSA_P521_SHA512, RSA_PKCS1_2048_8192_SHA256,
+    RSA_PKCS1_2048_8192_SHA384, RSA_PKCS1_2048_8192_SHA512,
 };
 
 #[tokio::main]
@@ -67,6 +69,8 @@ fn create_crypto_provider() -> Arc<CryptoProvider> {
     crypto_provider.cipher_suites = vec![
         TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
         TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+        TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+        TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
     ];
     crypto_provider.signature_verification_algorithms = SUPPORTED_SIG_ALGORITHMS;
     Arc::new(crypto_provider)
@@ -85,10 +89,10 @@ fn create_server_config(
     crypto_provider: Arc<CryptoProvider>,
     client_cert_verifier: Arc<dyn ClientCertVerifier>,
 ) -> Arc<ServerConfig> {
-    let server_cert_path = dotenvy::var("SERVER_CERT")
-        .expect("SERVER_CERT environment variable not set.");
-    let server_key_path = dotenvy::var("SERVER_KEY")
-        .expect("SERVER_KEY environment variable not set.");
+    let server_cert_path =
+        dotenvy::var("SERVER_CERT").expect("SERVER_CERT environment variable not set.");
+    let server_key_path =
+        dotenvy::var("SERVER_KEY").expect("SERVER_KEY environment variable not set.");
 
     let server_certificate = if let Some(ext) = PathBuf::from(&server_cert_path)
         .extension()
@@ -179,6 +183,9 @@ fn load_jwt_key(ext: &str, path: &PathBuf) -> EncodingKey {
 
 static SUPPORTED_SIG_ALGORITHMS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgorithms {
     all: &[
+        ECDSA_P256_SHA256,
+        ECDSA_P384_SHA384,
+        ECDSA_P521_SHA512,
         RSA_PKCS1_2048_8192_SHA512,
         RSA_PKCS1_2048_8192_SHA384,
         RSA_PKCS1_2048_8192_SHA256,
@@ -196,6 +203,9 @@ static SUPPORTED_SIG_ALGORITHMS: WebPkiSupportedAlgorithms = WebPkiSupportedAlgo
             SignatureScheme::RSA_PKCS1_SHA256,
             &[RSA_PKCS1_2048_8192_SHA256],
         ),
+        (SignatureScheme::ECDSA_NISTP521_SHA512, &[ECDSA_P521_SHA512]),
+        (SignatureScheme::ECDSA_NISTP384_SHA384, &[ECDSA_P384_SHA384]),
+        (SignatureScheme::ECDSA_NISTP256_SHA256, &[ECDSA_P256_SHA256]),
     ],
 };
 

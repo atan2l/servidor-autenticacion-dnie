@@ -11,14 +11,19 @@ Debido a los mecanismos soportados por la plataforma PKCS#11 del DNIe, el servid
 configurado para utilizar solo el protocolo TLSv1.2 con las siguientes suites de cifrado:
 
 - TLS ECDHE RSA AES256 GCM SHA384
-- TLS ECDHE RSA AES128 GMC SHA256
+- TLS ECDHE RSA AES128 GCM SHA256
+- TLS ECDHE ECDSA AES256 GCM SHA384
+- TLS ECDHE ECDSA AES128 GCM SHA256
 
 Por el mismo motivo solo se pueden utilizar los siguientes algoritmos de firma para
 verificar al cliente:
 
-- RSA PKCS#1 1.5 SHA512 2048-8192 bits
-- RSA PKCS#1 1.5 SHA384 2048-8192 bits
-- RSA PKCS#1 1.5 SHA256 2048-8192 bits
+- RSA+SHA512
+- RSA+SHA384
+- RSA+SHA256
+- ECDSA+SHA512
+- ECDSA+SHA384
+- ECDSA+SHA256
 
 Una vez validado el certificado cliente, el servidor responde con un JWT firmado con la
 clave privada que se especifique en el archivo de configuración `.env`.
